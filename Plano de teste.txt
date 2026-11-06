@@ -1,0 +1,290 @@
+# Plano de testes — Desafio QA Automation
+
+Aplicação sob teste: o site público ToolsQA, em `https://demoqa.com/`. O desafio da Accenture pede duas partes: um fluxo de API da livraria e cinco fluxos de tela. Este plano diz o que a suíte cobre, como cada caso é classificado e quando a execução pode começar e terminar.
+
+A Parte 1 é um único caso contínuo, com seis passos na mesma execução. A Parte 2 são seis casos de tela: Practice Form, Browser Windows, Web Tables com um registro, Web Tables com doze registros, Progress Bar e Sortable.
+
+## Objetivo
+
+Confirmar que a suíte executa o desafio de ponta a ponta no demoqa e que cada passo pedido produz o resultado observável definido abaixo.
+
+Na API, isso significa criar um usuário, obter token, confirmar que ele está autorizado, listar o catálogo, reservar dois livros escolhidos e consultar o usuário com exatamente esses livros. Na tela, significa percorrer cada fluxo visual do desafio até o estado final pedido: popup aberto e fechado, mensagem da nova janela, registro criado, editado e excluído, doze registros criados e excluídos, barra parada em até 25% e depois zerada após 100%, e lista em ordem crescente.
+
+O plano também fixa a fronteira da suíte: o que entra, o que fica de fora e qual resultado encerra uma execução válida.
+
+## Escopo
+
+### Dentro do escopo
+
+**Parte 1 — API da livraria.** Seis passos, nesta ordem, numa única execução:
+
+1. Criar um usuário em `https://demoqa.com/Account/v1/User`.
+2. Gerar um token em `https://demoqa.com/Account/v1/GenerateToken`.
+3. Confirmar a autorização em `https://demoqa.com/Account/v1/Authorized`.
+4. Listar os livros em `https://demoqa.com/BookStore/v1/Books`.
+5. Reservar dois livros, por POST no mesmo caminho de livros.
+6. Consultar o usuário em `https://demoqa.com/Account/v1/User/{userId}`, com os livros reservados.
+
+O contrato de método e corpo segue o Swagger em `https://demoqa.com/swagger/`. Listar e reservar compartilham o caminho; listar é GET e reservar é POST. O `userId` usado no passo 6 é o devolvido na criação.
+
+**Parte 2 — tela.** Cinco destinos, todos a partir de `https://demoqa.com/`:
+
+| Fluxo | Caminho da tela | O que a suíte exercita |
+| --- | --- | --- |
+| Practice Form | `/automation-practice-form` | Formulário completo, upload de um `.txt`, envio, popup e fechamento |
+| Browser Windows | `/browser-windows` | Botão New Window, mensagem da página de amostra e encerramento desse contexto |
+| Web Tables | `/webtables` | Um registro criado, editado e excluído; bônus de doze registros criados e excluídos |
+| Progress Bar | `/progress-bar` | Parada em até 25%, ida até 100% e reset para 0% |
+| Sortable | `/sortable` | Aba List ordenada, por drag and drop, até One, Two, Three, Four, Five, Six |
+
+A suíte de tela abre a URL de cada fluxo. O menu citado no desafio (Forms, Alerts, Frame & Windows, Elements, Widgets, Interactions) é o mapa de origem; a navegação pela home não faz parte da prova.
+
+### Fora do escopo
+
+Ficam fora os módulos do demoqa que o desafio não pede: Text Box, Check Box, Radio Button, Buttons, Links, Broken Links, Upload and Download, Dynamic Properties, Alerts, Frames, Nested Frames, Modal Dialogs, Accordian, Auto Complete, Date Picker, Slider, Selectable, Resizable e a Book Store aberta pela interface.
+
+Também ficam fora a aba Grid do Sortable, o login visual, qualquer chamada de API feita pela suíte de tela, cenários negativos, performance, segurança, acessibilidade, mobile, mais de um navegador e pipeline. A lista fechada do que a execução não verifica está na seção [O que não é testado](#o-que-não-é-testado).
+
+## Tipos de teste
+
+Todo caso deste plano é funcional: a pergunta é se o comportamento pedido no desafio acontece. API, UI/E2E e BDD dizem em qual camada e em qual formato esse funcional roda. Um caso pode levar mais de um tipo.
+
+| Tipo | O que verifica | Parte da suíte |
+| --- | --- | --- |
+| Funcional | O resultado de negócio de cada fluxo: usuário criado e com os livros reservados; formulário submetido; janela conferida; linha criada, alterada e excluída; doze linhas criadas e excluídas; barra dentro da regra; lista em ordem crescente | Os sete casos |
+| API | Chamadas HTTP de Account e BookStore, código de resposta e corpo, com a sessão passando de um passo ao seguinte | O caso contínuo da livraria, no módulo Java (JUnit 5 e REST Assured). Uma classe, um teste, seis passos em sequência |
+| UI/E2E | O fluxo no navegador, da abertura da tela ao estado visível final | Practice Form, Browser Windows, Progress Bar e Sortable, em specs Cypress com Page Object. Web Tables nos dois cenários, também no navegador |
+| BDD | Cenários escritos em Gherkin e executados com Cucumber | Somente Web Tables: o cenário de um registro e o bônus de doze. É o ponto em que o desafio pede Cucumber |
+
+Practice Form, Browser Windows, Progress Bar e Sortable permanecem em spec Cypress. O Gherkin não entra nesses quatro fluxos.
+
+As duas suítes apontam para o mesmo host e não compartilham dados. A API usa os caminhos de Account e BookStore. A tela usa as cinco URLs de página, sem login e sem abrir a Book Store. A falha de uma suíte não bloqueia a outra.
+
+## Ambiente e massa
+
+Ambiente: o demoqa público. Não há VPN, usuário pré-criado nem variável de ambiente. Na máquina de execução: JDK 17, Maven, Node LTS e Google Chrome.
+
+O banner fixo do site cobre Submit, Stop e a área de arraste. A preparação da suíte de tela o esconde antes das ações, nos cinco fluxos.
+
+**API.** Cada execução cria um usuário novo, com prefixo `qa` e o instante da rodada. Usuário repetido recebe 406 e o caso para no primeiro passo. A senha fica na configuração da suíte e cumpre a regra que o próprio endpoint devolve quando a senha é recusada: oito caracteres ou mais, com maiúscula, minúscula, dígito e caractere especial.
+
+Os dois livros são fixos, para o passo final poder exigir exatamente esse par:
+
+| Título | ISBN |
+| --- | --- |
+| Git Pocket Guide | 9781449325862 |
+| Speaking JavaScript | 9781449365035 |
+
+A listagem confirma os dois ISBN antes da reserva. Se um deles não estiver no catálogo, a execução para nesse passo e não escolhe outro livro.
+
+**Practice Form.** Os valores mudam a cada execução, dentro do que o widget aceita. Nome, sobrenome e endereço são texto aleatório. O e-mail é válido. Gênero é um dos três radios. O celular tem dez dígitos. A data nasce no date picker. O assunto é um valor aceito pelo autocomplete. Há ao menos um hobby. Estado e cidade formam um par da lista. O arquivo de upload é sempre o `.txt` versionado da suíte de tela.
+
+**Web Tables.** O e-mail identifica a linha. Idade e salário são numéricos. No cenário de um registro, salário e departamento editados são diferentes dos originais. No bônus, cada e-mail leva o índice de 1 a 12 e um sufixo da execução. A tela já abre com linhas de exemplo e pagina de dez em dez. Busca e exclusão usam o e-mail gerado pelo cenário. Linha que o teste não criou permanece.
+
+Nada da massa de API entra na tela, e nada do formulário entra na API.
+
+## Catálogo de casos
+
+Sete casos. O primeiro reúne os seis passos de API. Os outros cobrem a Parte 2, com o bônus da Web Table em caso próprio. Os casos de tela são independentes entre si: o dos doze registros não usa linha deixada pelo caso de um registro.
+
+| ID | Nome | Tipo | Parte |
+| --- | --- | --- | --- |
+| CT-API-01 | Fluxo contínuo da livraria | Funcional, API | Parte 1, seis passos |
+| CT-UI-01 | Practice Form | Funcional, UI/E2E | Parte 2 |
+| CT-UI-02 | Browser Windows | Funcional, UI/E2E | Parte 2 |
+| CT-UI-03 | Web Tables — um registro | Funcional, UI/E2E, BDD | Parte 2 |
+| CT-UI-04 | Web Tables — doze registros | Funcional, UI/E2E, BDD | Parte 2, bônus |
+| CT-UI-05 | Progress Bar | Funcional, UI/E2E | Parte 2 |
+| CT-UI-06 | Sortable | Funcional, UI/E2E | Parte 2 |
+
+Na tela, a ordem sugerida do relatório segue os fluxos do desafio: Practice Form, Browser Windows, Web Tables (um registro e depois os doze), Progress Bar, Sortable. Qualquer spec de tela também roda sozinho. Na API a ordem interna é fixa.
+
+### CT-API-01 — Fluxo contínuo da livraria
+
+| Campo | Conteúdo |
+| --- | --- |
+| ID | CT-API-01 |
+| Nome | Fluxo contínuo da livraria |
+| Tipo | Funcional, API |
+
+**Pré-condição.** O demoqa e o Swagger respondem. Não existe usuário prévio. A execução sorteia um `userName` único e usa a senha que atende à regra do endpoint. Os ISBN 9781449325862 e 9781449365035 são a escolha fixa da suíte. Criar usuário, gerar token e autorizar seguem sem header. Reservar e consultar o usuário enviam `Authorization: Bearer` com o token gerado no segundo passo.
+
+**Passos.**
+
+1. Criar o usuário (`POST /Account/v1/User`) e guardar `userId`, `userName` e senha.
+2. Gerar o token (`POST /Account/v1/GenerateToken`) com o mesmo usuário e a mesma senha.
+3. Confirmar a autorização (`POST /Account/v1/Authorized`) com as mesmas credenciais.
+4. Listar o catálogo (`GET /BookStore/v1/Books`) e localizar os dois ISBN escolhidos.
+5. Reservar os dois livros (`POST /BookStore/v1/Books`) com o `userId` e o token.
+6. Consultar o detalhe do usuário (`GET /Account/v1/User/{userId}`) com o mesmo token.
+
+**Resultado esperado.** O caso passa quando os seis passos concluem na mesma execução, na ordem acima, com a sessão produzida pelos passos anteriores. A primeira falha encerra o caso; os passos seguintes não rodam.
+
+| Passo | Prova |
+| --- | --- |
+| 1. Criar usuário | Resposta 201, `userId` preenchido e `username` igual ao enviado |
+| 2. Gerar token | Resposta 200, `token` preenchido e `status` Success |
+| 3. Autorizado | Resposta 200 e corpo `true` |
+| 4. Listar livros | Resposta 200 e os dois ISBN presentes no catálogo |
+| 5. Reservar | Resposta 201, com `userId` e a coleção dos dois ISBN |
+| 6. Detalhe | Resposta 200, o mesmo username e `books` com exatamente esses dois ISBN |
+
+Se um ISBN não aparecer na listagem, o caso falha nesse passo, nomeando o livro ausente, e a reserva não segue com um substituto.
+
+### CT-UI-01 — Practice Form
+
+| Campo | Conteúdo |
+| --- | --- |
+| ID | CT-UI-01 |
+| Nome | Practice Form |
+| Tipo | Funcional, UI/E2E |
+
+**Pré-condição.** A tela `/automation-practice-form` abre. O `.txt` de upload está na pasta de fixtures da suíte. A massa da execução cabe nos campos que recusam texto livre: assunto, data, estado e cidade saem de valores que o widget aceita.
+
+**Passos.**
+
+1. Preencher o formulário inteiro com a massa da execução.
+2. Anexar o `.txt` versionado.
+3. Submeter o formulário.
+4. Confirmar o popup.
+5. Fechar o popup.
+
+**Resultado esperado.** O modal com o título "Thanks for submitting the form" fica visível depois do envio. Depois do Close, o modal deixa de ser exibido.
+
+### CT-UI-02 — Browser Windows
+
+| Campo | Conteúdo |
+| --- | --- |
+| ID | CT-UI-02 |
+| Nome | Browser Windows |
+| Tipo | Funcional, UI/E2E |
+
+**Pré-condição.** A tela `/browser-windows` abre. O texto do desafio fala em "new Windows"; o botão da tela é "New Window". A prova usa o rótulo do botão.
+
+**Passos.**
+
+1. Acionar New Window.
+2. Confirmar que o acionamento pede `https://demoqa.com/sample` e que essa página exibe a mensagem "This is a sample page".
+3. Encerrar esse contexto.
+
+**Resultado esperado.** A página de amostra mostra "This is a sample page" e o contexto aberto por esse acionamento é encerrado antes do fim do caso. A suíte observa o destino pedido pelo botão, abre essa URL e lê a mensagem.
+
+### CT-UI-03 — Web Tables, um registro
+
+| Campo | Conteúdo |
+| --- | --- |
+| ID | CT-UI-03 |
+| Nome | Web Tables — um registro |
+| Tipo | Funcional, UI/E2E, BDD |
+
+**Pré-condição.** A tela `/webtables` abre, já com as linhas de exemplo. O cenário gera nome, sobrenome, idade, e-mail, salário e departamento, com e-mail único da execução. A feature Cucumber nomeia este cenário. Busca e exclusão usam esse e-mail, inclusive quando a linha cai na página seguinte.
+
+**Passos.**
+
+1. Criar uma linha com os seis campos.
+2. Buscar pelo e-mail e ler a linha.
+3. Editar salário e departamento para valores diferentes dos originais.
+4. Ler de novo a mesma linha.
+5. Excluir a linha e buscar outra vez pelo mesmo e-mail.
+
+**Resultado esperado.** Depois da criação, a linha mostra os valores enviados. Depois da edição, a mesma linha mostra o salário e o departamento novos. Depois da exclusão, a busca por aquele e-mail não devolve registro. As linhas de exemplo continuam na tabela.
+
+### CT-UI-04 — Web Tables, doze registros
+
+| Campo | Conteúdo |
+| --- | --- |
+| ID | CT-UI-04 |
+| Nome | Web Tables — doze registros |
+| Tipo | Funcional, UI/E2E, BDD |
+
+**Pré-condição.** A tela `/webtables` abre. O cenário é o bônus do desafio: doze registros criados de forma dinâmica pela feature Cucumber. A massa nasce no passo, com e-mail único por índice (1 a 12) e sufixo da execução. O caso não depende de CT-UI-03 e não reutiliza linha de outro cenário.
+
+**Passos.**
+
+1. Gerar doze registros e criar um a um pela tela.
+2. Localizar cada um dos doze e-mails na tabela.
+3. Excluir os doze.
+4. Buscar de novo cada um desses e-mails.
+
+**Resultado esperado.** Cada um dos doze e-mails aparece depois da criação. Depois da exclusão, nenhum desses e-mails permanece. As linhas que o cenário não criou permanecem.
+
+### CT-UI-05 — Progress Bar
+
+| Campo | Conteúdo |
+| --- | --- |
+| ID | CT-UI-05 |
+| Nome | Progress Bar |
+| Tipo | Funcional, UI/E2E |
+
+**Pré-condição.** A tela `/progress-bar` abre, com o botão Start visível e a barra em 0%. Quem decide o Stop é a leitura do valor exibido, não uma espera fixa.
+
+**Passos.**
+
+1. Acionar Start.
+2. Acionar Stop enquanto o valor lido ainda é menor ou igual a 25.
+3. Ler o valor exibido.
+4. Acionar Start de novo.
+5. Esperar a barra chegar a 100% e o botão mudar para Reset.
+6. Acionar Reset.
+
+**Resultado esperado.** Na primeira parada, o valor exibido é menor ou igual a 25%. Ao chegar a 100%, o Reset devolve a barra a 0% e o botão exibido volta a ser Start. Se a primeira leitura já estiver acima de 25, o caso falha.
+
+### CT-UI-06 — Sortable
+
+| Campo | Conteúdo |
+| --- | --- |
+| ID | CT-UI-06 |
+| Nome | Sortable |
+| Tipo | Funcional, UI/E2E |
+
+**Pré-condição.** A tela `/sortable` abre na aba List. A ordem inicial pode variar. O caso cobre só essa aba. O arraste usa evento de ponteiro, porque o componente não se move com o drag HTML5 comum.
+
+**Passos.**
+
+1. Arrastar os itens até a ordem One, Two, Three, Four, Five, Six.
+2. Ler a lista na ordem em que ficou.
+
+**Resultado esperado.** A lista termina em One, Two, Three, Four, Five, Six.
+
+## Critérios de entrada
+
+A execução começa quando todos os itens abaixo estão verdadeiros:
+
+- `https://demoqa.com/` e `https://demoqa.com/swagger/` respondem.
+- A máquina tem JDK 17, Maven, Node LTS e Google Chrome.
+- O módulo de API resolve as dependências e sobe com `mvn test`.
+- O módulo de tela instala as dependências e sobe com `cypress run` no Chrome.
+- O `.txt` de upload está na pasta de fixtures da suíte de tela.
+- Não há usuário, senha externa nem variável de ambiente a provisionar.
+- A preparação da suíte de tela esconde o banner fixo antes dos gestos.
+
+Os dois ISBN fazem parte da massa, não de um critério que impeça a largada. Se um deles tiver saído do catálogo, CT-API-01 começa e falha no passo de listagem, como descrito no caso.
+
+## Critérios de saída
+
+A execução está encerrada quando cada caso disparado tem resultado registrado: passou ou falhou no primeiro passo que quebrou. CT-API-01 conta como um resultado só; o relatório indica em qual dos seis passos ele parou, quando parar.
+
+A cobertura pedida por este plano está cumprida quando:
+
+- CT-API-01 passa até o detalhe do usuário, com exatamente os dois ISBN reservados.
+- CT-UI-01, CT-UI-02, CT-UI-03, CT-UI-05 e CT-UI-06 passam com o resultado esperado de cada caso.
+- CT-UI-04 passa com os doze e-mails criados e depois ausentes.
+
+Uma entrega parcial do desafio continua válida pelo enunciado: cada passo concluído conta, e o bônus é ponto adicional. Para este plano, caso não executado ou falho permanece em aberto e a cobertura fica incompleta. Não há nota mínima nem rubrica numérica no material do desafio; a saída da suíte é o conjunto de resultados dos sete casos.
+
+## O que não é testado
+
+Dentro dos fluxos que entram no escopo, a suíte não verifica:
+
+- O conteúdo linha a linha do modal do Practice Form. A prova é o popup aberto e depois fechado.
+- A aba Grid do Sortable e a ordem em que a aba List aparece antes do arraste.
+- As linhas de exemplo da Web Table. Elas não são criadas, editadas nem excluídas.
+- Senha inválida, usuário duplicado, livro inexistente, token ausente e token trocado.
+- Códigos HTTP além dos seis passos de CT-API-01.
+- A exclusão do usuário criado na API. O fluxo pedido termina no detalhe do usuário; o `userName` único evita o 406 na execução seguinte.
+- Mais de um navegador, viewport mobile, performance, segurança e acessibilidade.
+- Login visual, a Book Store pela interface e qualquer chamada de Account ou BookStore feita pela suíte de tela.
+- Cucumber em Practice Form, Browser Windows, Progress Bar e Sortable.
+- Pipeline. A entrega pedida pelo desafio é o repositório versionado.
+
+Os módulos do demoqa citados em [Fora do escopo](#fora-do-escopo) também não têm caso.

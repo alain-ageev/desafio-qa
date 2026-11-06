@@ -1,0 +1,49 @@
+# Relatório de execução — desafio-qa
+
+Execução da suíte contra `https://demoqa.com`, em 5 de novembro de 2026, horário de Brasília (America/Sao_Paulo).
+
+Ambiente observado na máquina da execução: JDK 17.0.20.1 (`JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`), Maven 3.8.7, Node 22.23.4, Cypress 16.2.1 e Google Chrome 156 em modo headless.
+
+## Comandos
+
+API, a partir de `desafio-qa/api`:
+
+```bash
+mvn test
+```
+
+Início: 5 de novembro de 2026, 22:18:11 (America/Sao_Paulo). Fim: 22:18:20. Tempo de parede do comando: 9 s. O Maven registrou tempo total de 8,659 s. O Surefire registrou 7,047 s no teste.
+
+Tela, a partir de `desafio-qa/ui`. O `node_modules` não estava presente, então a instalação rodou antes da suíte:
+
+```bash
+npm ci
+npx cypress run --browser chrome
+```
+
+O `npm ci` informou 285 pacotes adicionados em 2 s, por volta de 22:18:02. O Cypress começou às 22:18:12 e terminou às 22:19:02. Tempo de parede do comando: 50 s. O resumo do Cypress registrou 41 s para os cinco specs.
+
+## Resultado por caso
+
+| Caso | Nome | Resultado | Duração observada |
+| --- | --- | --- | --- |
+| CT-API-01 | Fluxo contínuo da livraria | Passou | 7,047 s (Surefire) |
+| CT-UI-01 | Practice Form | Passou | 3,932 s no teste; spec 3 s |
+| CT-UI-02 | Browser Windows | Passou | 1,563 s no teste; spec 1 s |
+| CT-UI-03 | Web Tables — um registro | Passou | 4,116 s no cenário |
+| CT-UI-04 | Web Tables — doze registros | Passou | 18,305 s no cenário |
+| CT-UI-05 | Progress Bar | Passou | 11,588 s no teste; spec 11 s |
+| CT-UI-06 | Sortable | Passou | 1,679 s no teste; spec 1 s |
+
+CT-API-01 corresponde ao teste `desafio.bookstore.FluxoBookstoreTest`. O Surefire informou: `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0`. O Maven encerrou com `BUILD SUCCESS`. O log não imprime o código HTTP de cada um dos seis passos; o que ficou registrado é a aprovação do teste inteiro.
+
+Na tela, o Cypress informou `All specs passed`: 6 testes, 6 aprovações, 0 falhas, 0 pendentes, 0 ignorados. O spec `web-tables.feature` reúne CT-UI-03 e CT-UI-04 e levou 22 s no total.
+
+## Falhas
+
+Nenhuma. Os dois comandos de teste terminaram com código de saída 0. Não houve mensagem de erro de asserção, screenshot de falha nem stack trace.
+
+## Contagem
+
+- Passou: 7
+- Falhou: 0
