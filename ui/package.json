@@ -1,0 +1,15 @@
+{
+  "name": "desafio-qa-ui",
+  "private": true,
+  "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "28.0.1",
+    "@bahmutov/cypress-esbuild-preprocessor": "2.2.8",
+    "cypress": "16.2.1",
+    "cypress-real-events": "1.15.1"
+  },
+  "cypress-cucumber-preprocessor": {
+    "stepDefinitions": [
+      "cypress/e2e/[filepath]/**/*.{js,mjs,ts,tsx}"
+    ]
+  }
+}

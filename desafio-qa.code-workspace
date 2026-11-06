@@ -1,0 +1,47 @@
+{
+  "folders": [
+    {
+      "name": "api",
+      "path": "api"
+    },
+    {
+      "name": "ui",
+      "path": "ui"
+    }
+  ],
+  "settings": {
+    "java.import.maven.enabled": true,
+    "java.configuration.runtimes": [
+      {
+        "name": "JavaSE-17",
+        "default": true
+      }
+    ],
+    "cypressTestExplorer.browser": "chrome"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "API: mvn test",
+        "type": "shell",
+        "command": "mvn test",
+        "options": {
+          "cwd": "${workspaceFolder:api}"
+        },
+        "group": "test",
+        "problemMatcher": []
+      },
+      {
+        "label": "UI: Cypress no Chrome",
+        "type": "shell",
+        "command": "npx cypress run --browser chrome",
+        "options": {
+          "cwd": "${workspaceFolder:ui}"
+        },
+        "group": "test",
+        "problemMatcher": []
+      }
+    ]
+  }
+}
